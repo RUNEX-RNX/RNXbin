@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>RNXBin — Ваш надёжный пастебин</title>
+    <title>RNXBin — Пастебин с соцсетями и улучшенной тёмной темой</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
             transition: background 0.2s ease, color 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
 
-        /* ----- СВЕТЛАЯ ТЕМА (аккуратная, приятная) ----- */
+        /* ----- СВЕТЛАЯ ТЕМА (базовая) ----- */
         body.light {
             background: #f5f7fb;
             color: #1e293b;
@@ -51,8 +51,19 @@
             border: 1px solid #e2e8f0;
             box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
         }
+        /* светлая тема: кнопка edit как основная */
+        body.light .btn-edit {
+            background: linear-gradient(95deg, #4f46e5, #7c3aed);
+            color: white;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+        }
+        body.light .btn-edit:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 6px 14px rgba(79, 70, 229, 0.4);
+        }
 
-        /* ----- ТЁМНАЯ ТЕМА (глубокая, контрастная) ----- */
+        /* ----- ТЁМНАЯ ТЕМА (все кнопки как EDIT, кроме удаления) ----- */
         body.dark {
             background: #0b0f1c;
             color: #eef2ff;
@@ -88,6 +99,33 @@
             background: #0e1322;
             border: 1px solid #2d3450;
         }
+        /* в тёмной теме все обычные кнопки получают стиль EDIT (градиент) */
+        body.dark .btn:not(.btn-danger):not(.social-btn) {
+            background: linear-gradient(95deg, #4f46e5, #7c3aed);
+            color: white;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+            border: none;
+        }
+        body.dark .btn:not(.btn-danger):not(.social-btn):hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 6px 14px rgba(79, 70, 229, 0.4);
+        }
+        /* кнопка удаления остаётся красной */
+        body.dark .btn-danger {
+            background: #dc2626;
+            color: white;
+            box-shadow: none;
+        }
+        body.dark .btn-danger:hover {
+            background: #b91c1c;
+            transform: scale(0.98);
+        }
+        /* для кнопки выхода в профиле */
+        body.dark .logout-btn {
+            background: #dc2626 !important;
+            color: white !important;
+        }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -119,11 +157,20 @@
         .social-btn {
             background: none;
             border: none;
-            font-size: 1.8rem;
             cursor: pointer;
             padding: 0.4rem 0.7rem;
             border-radius: 60px;
             transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
         }
         .social-btn:hover {
             background: rgba(100, 100, 120, 0.2);
@@ -143,7 +190,7 @@
             margin-top: 0.2rem;
         }
 
-        /* Кнопки — единый стиль */
+        /* Кнопки — единый стиль (базовый для светлой) */
         .btn {
             padding: 0.55rem 1.3rem;
             border-radius: 40px;
@@ -286,6 +333,11 @@
             background: rgba(128, 128, 128, 0.2);
             transform: translateX(4px);
         }
+        .social-link img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
         hr {
             margin: 1rem 0;
             border-color: #2d3450;
@@ -296,10 +348,13 @@
 <div class="container">
     <div class="header">
         <div class="left-group">
-            <button class="social-btn" id="socialMenuBtn" aria-label="Соцсети">🔗 🌐</button>
+            <button class="social-btn" id="socialMenuBtn" aria-label="Соцсети">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238b8b8b'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="social" class="social-icon">
+                <span>Соцсети</span>
+            </button>
             <div class="logo">
                 <h1>✧ RNXBin ✧</h1>
-                <p>пастебин с сохранением, редактированием и профилем</p>
+                <p>пастебин с иконками и профилем</p>
             </div>
         </div>
         <div class="flex-row">
@@ -309,19 +364,19 @@
         </div>
     </div>
 
-    <!-- выпадающее меню соцсетей (иконка + ссылка) -->
+    <!-- выпадающее меню соцсетей с настоящими иконками -->
     <div id="socialMenu" class="social-menu">
         <a href="https://t.me/RUNEX_X_SCRIPT" target="_blank" rel="noopener noreferrer" class="social-link">
-            <span>📱</span> Telegram
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2326A5E4'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.66-.35-1.02.22-1.61.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.08-.04-.11-.05-.02-.1-.01-.14.02-.06.03-1.94 1.23-2.74 1.74-.1.07-.2.1-.3.1-.2 0-.59-.12-1.1-.33-.66-.28-1.17-.44-1.11-.73.03-.13.18-.27.49-.41.91-.4 2.99-1.25 4.01-1.65 1.35-.54 1.92-.64 2.27-.64.16 0 .39.04.57.24.15.17.17.38.18.55z'/%3E%3C/svg%3E" alt="telegram"> Telegram
         </a>
         <a href="https://www.youtube.com/@RUNEX_X_SCRIPT" target="_blank" rel="noopener noreferrer" class="social-link">
-            <span>📺</span> YouTube
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF0000'%3E%3Cpath d='M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81zM10 15l5-3-5-3v6z'/%3E%3C/svg%3E" alt="youtube"> YouTube
         </a>
         <a href="https://discord.gg/86X8qTa5b" target="_blank" rel="noopener noreferrer" class="social-link">
-            <span>🎮</span> Discord
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%235865F2'%3E%3Cpath d='M20.3 5.6c-1.4-.6-2.9-1-4.5-1.3-.2.4-.4.9-.5 1.4-1.7-.3-3.4-.3-5.1 0-.2-.5-.4-1-.5-1.4-1.5.3-3.1.7-4.5 1.3-1.9 2.8-2.5 5.6-2.2 8.4 1.6 1.2 3.4 2 5.3 2.5.4-.6.8-1.2 1.1-1.9-1.2-.5-2.3-1.1-3.3-1.9.3-.2.6-.4.9-.6 1.8 1.1 3.8 1.6 5.9 1.6s4.1-.5 5.9-1.6c.3.2.6.4.9.6-1 .8-2.1 1.5-3.3 1.9.3.7.7 1.3 1.1 1.9 1.9-.5 3.7-1.3 5.3-2.5.4-2.8-.2-5.6-2.2-8.4zM8.8 13.8c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2zm6.4 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2z'/%3E%3C/svg%3E" alt="discord"> Discord
         </a>
         <a href="https://max.ru/join/iezUTvN_01PsecfWf3tQFlyB7x_rTAi77u556oDD1mY" target="_blank" rel="noopener noreferrer" class="social-link">
-            <span>⭐</span> Max.ru
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F59E0B'%3E%3Cpath d='M12 2L15 8.5L22 9.5L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9.5L9 8.5L12 2Z'/%3E%3C/svg%3E" alt="maxru"> Max.ru
         </a>
     </div>
 
@@ -330,26 +385,25 @@
 <div id="toastMsg" class="toast">📡 готово</div>
 
 <script>
-    // ------------------- ХРАНИЛИЩЕ (localStorage – данные навсегда) -------------------
+    // ------------------- ХРАНИЛИЩЕ (localStorage) -------------------
     let allPastes = [];
     let users = [];
     let currentUser = null;
 
     function loadStorage() {
-        const savedPastes = localStorage.getItem('rnxbin_pastes_v6');
-        const savedUsers = localStorage.getItem('rnxbin_users_v6');
+        const savedPastes = localStorage.getItem('rnxbin_pastes_v8');
+        const savedUsers = localStorage.getItem('rnxbin_users_v8');
         if(savedPastes) allPastes = JSON.parse(savedPastes);
         if(savedUsers) users = JSON.parse(savedUsers);
         else {
-            // первый запуск: создаём администратора
             users = [{ id: "u1", username: "admin", passwordHash: btoa("admin123"), theme: "light" }];
-            localStorage.setItem('rnxbin_users_v6', JSON.stringify(users));
+            localStorage.setItem('rnxbin_users_v8', JSON.stringify(users));
             allPastes = [];
-            localStorage.setItem('rnxbin_pastes_v6', JSON.stringify(allPastes));
+            localStorage.setItem('rnxbin_pastes_v8', JSON.stringify(allPastes));
         }
     }
-    function savePastes() { localStorage.setItem('rnxbin_pastes_v6', JSON.stringify(allPastes)); }
-    function saveUsers() { localStorage.setItem('rnxbin_users_v6', JSON.stringify(users)); }
+    function savePastes() { localStorage.setItem('rnxbin_pastes_v8', JSON.stringify(allPastes)); }
+    function saveUsers() { localStorage.setItem('rnxbin_users_v8', JSON.stringify(users)); }
     function showToast(msg) {
         const t = document.getElementById('toastMsg');
         t.textContent = msg;
@@ -358,7 +412,7 @@
     }
     function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
 
-    // ------------------- ГЛАВНАЯ ЛЕНТА (все публикации) -------------------
+    // ------------------- ГЛАВНАЯ ЛЕНТА -------------------
     function renderMainList() {
         const container = document.getElementById('pasteListContainer');
         if(!container) return;
@@ -433,7 +487,7 @@
         }
     }
 
-    // ------------------- СТРАНИЦА РЕДАКТИРОВАНИЯ (как в pastebin) -------------------
+    // ------------------- СТРАНИЦА РЕДАКТИРОВАНИЯ -------------------
     function showEditPage(pasteId) {
         const paste = allPastes.find(p => p.id === pasteId);
         if(!paste || !currentUser || paste.authorId !== currentUser.id) {
@@ -532,7 +586,7 @@
                             </div>
                         </div>
                         <hr>
-                        <button class="btn btn-danger" id="logoutBtn" style="width:100%;">🚪 Выйти</button>
+                        <button class="btn btn-danger logout-btn" id="logoutBtn" style="width:100%;">🚪 Выйти</button>
                     </div>
                 </div>
             `;
@@ -598,7 +652,7 @@
         }
     }
 
-    // ------------------- УПРАВЛЕНИЕ ТЕМОЙ (полностью синхронизирована) -------------------
+    // ------------------- УПРАВЛЕНИЕ ТЕМОЙ (тёмная: все кнопки как EDIT) -------------------
     function setTheme(theme) {
         document.body.classList.remove('light', 'dark');
         document.body.classList.add(theme);
