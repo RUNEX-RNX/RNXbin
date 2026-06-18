@@ -1,142 +1,47 @@
-// ---------- ИСПРАВЛЕННАЯ ФУНКЦИЯ: renderProfilePageByUsername() ----------
-function renderProfilePageByUsername() {
-    let username = getUsernameFromPath();
-    if(!username) { navigate('/'); return; }
-
-    if(!currentUser) {
-        navigate('/register');
-        return;
-    }
-
-    let user = users.find(u => u.username === username);
-    if(!user) { showToast("Пользователь не найден"); navigate('/'); return; }
-
-    let isOwn = currentUser.id === user.id;
-    let userPastes = allPastes.filter(p => p.authorId === user.id);
-    let pasteListHtml = userPastes.map(p => 
-        `<div class="paste-item" data-url="/${encodeURIComponent(user.username)}/${encodeURIComponent(p.title)}">
-            <div class="paste-title">📄 ${escapeHtml(p.title)}</div>
-            <div class="paste-meta">${new Date(p.createdAt).toLocaleString()}</div>
-        </div>`
-    ).join('');
-    if(!pasteListHtml) pasteListHtml = '<div style="padding:1rem;">Нет публикаций</div>';
-
-    document.getElementById('appRoot').innerHTML = `
-        <div class="container">
-            <div class="card">
-                <h2>👤 Профиль: ${escapeHtml(user.username)}</h2>
-                ${isOwn ? `
-                    <div style="margin:1rem 0;">
-                        <label>Сменить пароль</label>
-                        <input type="password" id="newPass" class="input-field">
-                        <button class="btn btn-primary" id="changePassBtn" style="margin-top:0.5rem;">Сменить</button>
-                    </div>
-                    <hr>
-                ` : ''}
-                <h3>📌 Публикации</h3>
-                <div class="paste-list">${pasteListHtml}</div>
-                <div class="flex-row" style="margin-top:1.5rem;">
-                    <!-- ✅ ИСПРАВЛЕНО: переход на https://runex-rnx.github.io/RNXbin -->
-                    <button class="btn btn-primary" id="backHomeBtn">← На главную</button>
-                    ${isOwn ? `<button class="btn btn-danger" id="logoutBtn" style="margin-left:auto;">🚪 Выйти</button>` : ''}
-                </div>
-            </div>
-        </div>
-    `;
-
-    // ✅ ИСПРАВЛЕНО: кнопка "На главную" → https://runex-rnx.github.io/RNXbin
-    document.getElementById('backHomeBtn').onclick = () => {
-        window.location.href = 'https://runex-rnx.github.io/RNXbin';
-    };
-
-    if(isOwn) {
-        document.getElementById('changePassBtn')?.addEventListener('click', () => {
-            let newP = document.getElementById('newPass').value;
-            if(!newP || newP.length<3) { showToast("Пароль минимум 3 символа"); return; }
-            currentUser.passwordHash = btoa(newP);
-            let idx = users.findIndex(u => u.id === currentUser.id);
-            if(idx !== -1) users[idx].passwordHash = btoa(newP);
-            saveUsers();
-            showToast("✅ Пароль изменён");
-        });
-        document.getElementById('logoutBtn').onclick = () => {
-            currentUser = null;
-            localStorage.removeItem('rnxbin_session');
-            window.location.href = 'https://runex-rnx.github.io/RNXbin';
-        };
-    }
-    document.querySelectorAll('.paste-item').forEach(el => {
-        el.addEventListener('click', () => { navigate(el.getAttribute('data-url')); });
-    });
-    manageAdminFab(currentUser?.username === "RNXbin");
-    showGlobalMessage();
-}
-
-// ---------- ИСПРАВЛЕННАЯ ФУНКЦИЯ: showCreatePage() ----------
-function showCreatePage() {
-    if(!currentUser) { navigate('/register'); return; }
-    document.getElementById('appRoot').innerHTML = `
-        <div class="container" style="max-width:950px;">
-            <div>
-                <!-- ✅ ИСПРАВЛЕНО: кнопка "На главную" → https://runex-rnx.github.io/RNXbin -->
-                <button class="btn btn-primary" id="backHome">← На главную</button>
-            </div>
-            <div class="card" style="margin-top:1rem;">
-                <h2>➕ Новая публикация</h2>
-                <input type="text" id="newTitle" placeholder="Название" class="input-field">
-                <textarea id="newContent" rows="12" placeholder="vless://..."></textarea>
-                <div class="flex-row">
-                    <button class="btn btn-primary" id="doPublish">📤 Опубликовать</button>
-                    <button class="btn btn-primary" id="cancelPub">Отмена</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // ✅ ИСПРАВЛЕНО: кнопка "На главную" → https://runex-rnx.github.io/RNXbin
-    document.getElementById('backHome').onclick = () => {
-        window.location.href = 'https://runex-rnx.github.io/RNXbin';
-    };
-    document.getElementById('cancelPub').onclick = () => {
-        window.location.href = 'https://runex-rnx.github.io/RNXbin';
-    };
-    document.getElementById('doPublish').onclick = () => { 
-        let title = document.getElementById('newTitle').value.trim() || "новая запись"; 
-        let content = document.getElementById('newContent').value.trim(); 
-        if(!content) { alert("Пустой текст"); return; } 
-        let newId = 'p_' + Date.now() + '_' + Math.random().toString(36); 
-        allPastes.unshift({ id: newId, title: title, content: content, authorId: currentUser.id, createdAt: Date.now() }); 
-        savePastes(); 
-        navigate(`/${encodeURIComponent(currentUser.username)}/${encodeURIComponent(title)}`); 
-    };
-    manageAdminFab(currentUser?.username === "RNXbin");
-    showGlobalMessage();
-}
-
-// ---------- ИСПРАВЛЕННАЯ ФУНКЦИЯ: attachMainEvents() ----------
-function attachMainEvents() {
-    document.getElementById('profileBtn')?.addEventListener('click', () => { 
-        if(currentUser) navigate(`/profile/${encodeURIComponent(currentUser.username)}`); 
-        else navigate('/register'); 
-    });
-    // ✅ ИСПРАВЛЕНО: кнопка "Добавить" → https://runex-rnx.github.io/RNXbin/create
-    document.getElementById('createBtn')?.addEventListener('click', () => {
-        window.location.href = 'https://runex-rnx.github.io/RNXbin/create';
-    });
-    document.getElementById('themeToggleBtn')?.addEventListener('click', () => { let isDark = document.body.classList.contains('dark'); setTheme(isDark ? 'light' : 'dark'); });
-    let sb = document.getElementById('socialMenuBtn'), sm = document.getElementById('socialMenu');
-    if(sb && sm) { sb.addEventListener('click', (e) => { e.stopPropagation(); sm.classList.toggle('show'); }); document.addEventListener('click', (e) => { if(!sm.contains(e.target) && e.target !== sb) sm.classList.remove('show'); }); }
-}
-
-// ---------- ИСПРАВЛЕННАЯ ФУНКЦИЯ: renderRoute() (для обработки /create) ----------
-function renderRoute() {
-    let path = getPath();
-    if(path === '/' || path === '/home') { renderMainPage(); return; }
-    if(path === '/create') { showCreatePage(); return; } // ✅ Добавлен явный роут /create
-    if(path.startsWith('/register')) { renderLoginRegisterPage(); return; }
-    if(path.startsWith('/profile/')) { renderProfilePageByUsername(); return; }
-    if(path.startsWith('/raw/')) { renderRawPage(); return; }
-    let parts = path.split('/').filter(p => p);
-    if(parts.length === 2) { renderPublicPastePage(decodeURIComponent(parts[0]), decodeURIComponent(parts[1])); return; }
-    renderMainPage();
-}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Перенаправление...</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #0b0f1c;
+            color: #eef2ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .loader {
+            border: 4px solid #2d3450;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>⏳ Перенаправление...</h1>
+        <div class="loader"></div>
+        <p>Пожалуйста, подождите...</p>
+    </div>
+    <script>
+        // Сохраняем путь, по которому пришли
+        var path = window.location.pathname;
+        // Перенаправляем на index.html с сохранением пути
+        window.location.replace('/RNXbin/?path=' + encodeURIComponent(path));
+    </script>
+</body>
+</html>
