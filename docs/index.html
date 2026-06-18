@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -85,7 +86,7 @@
     function renderRoute() {
         let path = getPath();
         if(path === '/' || path === '/home') { renderMainPage(); return; }
-        if(path.startsWith('/register')) { renderRegisterPage(); return; }
+        if(path.startsWith('/register')) { renderLoginRegisterPage(); return; }
         if(path.startsWith('/profile/')) { renderProfilePageByUsername(); return; }
         if(path.startsWith('/raw/')) { renderRawPage(); return; }
         let parts = path.split('/').filter(p => p);
@@ -159,27 +160,131 @@
         showGlobalMessage();
     }
 
-    function renderRegisterPage() {
-        document.getElementById('appRoot').innerHTML = `<div class="container" style="max-width:500px;"><div class="card"><h2>📝 Регистрация</h2><input type="text" id="regUser" placeholder="Логин" class="input-field"><input type="password" id="regPass" placeholder="Пароль" class="input-field" style="margin-top:0.5rem;"><button class="btn btn-primary" id="doRegister" style="margin-top:1rem; width:100%;">Зарегистрироваться</button><p style="margin-top:1rem;"><button class="btn btn-primary" onclick="navigate('/')">← На главную</button> <button class="btn btn-primary" id="gotoLogin">Войти</button></p></div></div>`;
-        document.getElementById('doRegister').onclick = () => { let u = document.getElementById('regUser').value.trim(); let p = document.getElementById('regPass').value.trim(); if(!u || u.length<3) { alert("Логин мин 3"); return; } if(!p || p.length<3) { alert("Пароль мин 3"); return; } if(users.find(uu => uu.username === u)) { alert("Логин занят"); return; } let newId = 'u_'+Date.now(); users.push({ id: newId, username: u, passwordHash: btoa(p), theme: 'light' }); saveUsers(); currentUser = { id: newId, username: u }; localStorage.setItem('rnxbin_session', JSON.stringify({ id: newId, username: u })); navigate(`/profile/${encodeURIComponent(u)}`); };
-        document.getElementById('gotoLogin')?.addEventListener('click', () => navigate('/profile/guest'));
+    // ✅ ИСПРАВЛЕНА СТРАНИЦА ВХОДА/РЕГИСТРАЦИИ
+    function renderLoginRegisterPage() {
+        document.getElementById('appRoot').innerHTML = `
+            <div class="container" style="max-width:500px;">
+                <div class="card">
+                    <h2>🔐 Вход / Регистрация</h2>
+                    <div style="margin:1rem 0;">
+                        <input type="text" id="loginUser" placeholder="Логин" class="input-field">
+                        <input type="password" id="loginPass" placeholder="Пароль" class="input-field" style="margin-top:0.5rem;">
+                        <button class="btn btn-primary" id="doLogin" style="margin-top:1rem; width:100%;">Войти</button>
+                    </div>
+                    <hr>
+                    <div>
+                        <input type="text" id="regUser" placeholder="Новый логин" class="input-field">
+                        <input type="password" id="regPass" placeholder="Пароль" class="input-field" style="margin-top:0.5rem;">
+                        <button class="btn btn-primary" id="doRegister" style="margin-top:1rem; width:100%;">📝 Зарегистрироваться</button>
+                    </div>
+                    <p style="margin-top:1rem; text-align:center;">
+                        <button class="btn btn-outline" onclick="navigate('/')">← На главную</button>
+                    </p>
+                </div>
+            </div>
+        `;
+
+        // Вход
+        document.getElementById('doLogin').onclick = () => {
+            let u = document.getElementById('loginUser').value.trim();
+            let p = document.getElementById('loginPass').value.trim();
+            if(!u || !p) { showToast("Введите логин и пароль"); return; }
+            let user = users.find(uu => uu.username === u && uu.passwordHash === btoa(p));
+            if(!user) { showToast("❌ Неверный логин или пароль"); return; }
+            currentUser = { id: user.id, username: user.username };
+            localStorage.setItem('rnxbin_session', JSON.stringify({ id: user.id, username: user.username }));
+            setThemeFromUser();
+            navigate('/');
+            showToast("✅ Добро пожаловать, " + user.username);
+        };
+
+        // Регистрация
+        document.getElementById('doRegister').onclick = () => {
+            let u = document.getElementById('regUser').value.trim();
+            let p = document.getElementById('regPass').value.trim();
+            if(!u || u.length<3) { showToast("Логин минимум 3 символа"); return; }
+            if(!p || p.length<3) { showToast("Пароль минимум 3 символа"); return; }
+            if(users.find(uu => uu.username === u)) { showToast("❌ Логин уже занят"); return; }
+            let newId = 'u_' + Date.now();
+            users.push({ id: newId, username: u, passwordHash: btoa(p), theme: 'light' });
+            saveUsers();
+            currentUser = { id: newId, username: u };
+            localStorage.setItem('rnxbin_session', JSON.stringify({ id: newId, username: u }));
+            setThemeFromUser();
+            navigate('/');
+            showToast("✅ Добро пожаловать, " + u);
+        };
         manageAdminFab(false);
     }
 
+    // ✅ ИСПРАВЛЕНА СТРАНИЦА ПРОФИЛЯ
     function renderProfilePageByUsername() {
         let username = getUsernameFromPath();
         if(!username) { navigate('/'); return; }
+
+        // Если пользователь не залогинен — показываем страницу входа
+        if(!currentUser) {
+            navigate('/register');
+            return;
+        }
+
+        // Если пытается зайти на чужой профиль — показываем просмотр
         let user = users.find(u => u.username === username);
-        if(!user && !currentUser) { navigate('/register'); return; }
-        if(!user && currentUser) { navigate(`/profile/${encodeURIComponent(currentUser.username)}`); return; }
-        let isOwn = currentUser && currentUser.id === user.id;
+        if(!user) { showToast("Пользователь не найден"); navigate('/'); return; }
+
+        let isOwn = currentUser.id === user.id;
         let userPastes = allPastes.filter(p => p.authorId === user.id);
-        let pasteListHtml = userPastes.map(p => `<div class="paste-item" data-url="/${encodeURIComponent(user.username)}/${encodeURIComponent(p.title)}"><div class="paste-title">📄 ${escapeHtml(p.title)}</div><div class="paste-meta">${new Date(p.createdAt).toLocaleString()}</div></div>`).join('');
-        if(pasteListHtml === '') pasteListHtml = '<div style="padding:1rem;">Нет публикаций</div>';
-        document.getElementById('appRoot').innerHTML = `<div class="container"><div class="card"><h2>👤 Профиль: ${escapeHtml(user.username)}</h2>${isOwn ? `<div style="margin:1rem 0;"><label>Сменить пароль</label><input type="password" id="newPass" class="input-field"><button class="btn btn-primary" id="changePassBtn" style="margin-top:0.5rem;">Сменить</button></div><hr>` : ''}<h3>📌 Публикации</h3><div class="paste-list">${pasteListHtml}</div><div class="flex-row" style="margin-top:1.5rem;"><button class="btn btn-primary" id="backHomeBtn">← На главную</button>${isOwn ? `<button class="btn btn-danger" id="logoutBtn" style="margin-left:auto;">🚪 Выйти</button>` : ''}</div></div></div>`;
-        if(isOwn) { document.getElementById('changePassBtn')?.addEventListener('click', () => { let newP = document.getElementById('newPass').value; if(!newP || newP.length<3) { alert("Пароль мин 3"); return; } currentUser.passwordHash = btoa(newP); let idx = users.findIndex(u => u.id === currentUser.id); if(idx !== -1) users[idx].passwordHash = btoa(newP); saveUsers(); showToast("Пароль изменён"); }); document.getElementById('logoutBtn').onclick = () => { currentUser=null; localStorage.removeItem('rnxbin_session'); navigate('/'); }; }
+        let pasteListHtml = userPastes.map(p => 
+            `<div class="paste-item" data-url="/${encodeURIComponent(user.username)}/${encodeURIComponent(p.title)}">
+                <div class="paste-title">📄 ${escapeHtml(p.title)}</div>
+                <div class="paste-meta">${new Date(p.createdAt).toLocaleString()}</div>
+            </div>`
+        ).join('');
+        if(!pasteListHtml) pasteListHtml = '<div style="padding:1rem;">Нет публикаций</div>';
+
+        document.getElementById('appRoot').innerHTML = `
+            <div class="container">
+                <div class="card">
+                    <h2>👤 Профиль: ${escapeHtml(user.username)}</h2>
+                    ${isOwn ? `
+                        <div style="margin:1rem 0;">
+                            <label>Сменить пароль</label>
+                            <input type="password" id="newPass" class="input-field">
+                            <button class="btn btn-primary" id="changePassBtn" style="margin-top:0.5rem;">Сменить</button>
+                        </div>
+                        <hr>
+                    ` : ''}
+                    <h3>📌 Публикации</h3>
+                    <div class="paste-list">${pasteListHtml}</div>
+                    <div class="flex-row" style="margin-top:1.5rem;">
+                        <button class="btn btn-primary" id="backHomeBtn">← На главную</button>
+                        ${isOwn ? `<button class="btn btn-danger" id="logoutBtn" style="margin-left:auto;">🚪 Выйти</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if(isOwn) {
+            document.getElementById('changePassBtn')?.addEventListener('click', () => {
+                let newP = document.getElementById('newPass').value;
+                if(!newP || newP.length<3) { showToast("Пароль минимум 3 символа"); return; }
+                currentUser.passwordHash = btoa(newP);
+                let idx = users.findIndex(u => u.id === currentUser.id);
+                if(idx !== -1) users[idx].passwordHash = btoa(newP);
+                saveUsers();
+                showToast("✅ Пароль изменён");
+            });
+            document.getElementById('logoutBtn').onclick = () => {
+                currentUser = null;
+                localStorage.removeItem('rnxbin_session');
+                navigate('/');
+                showToast("👋 Вы вышли");
+            };
+        }
         document.getElementById('backHomeBtn').onclick = () => navigate('/');
-        document.querySelectorAll('.paste-item').forEach(el => { el.addEventListener('click', () => { navigate(el.getAttribute('data-url')); }); });
+        document.querySelectorAll('.paste-item').forEach(el => {
+            el.addEventListener('click', () => { navigate(el.getAttribute('data-url')); });
+        });
         manageAdminFab(currentUser?.username === "RNXbin");
         showGlobalMessage();
     }
@@ -195,18 +300,24 @@
     }
 
     function getUsernameFromPath() { let parts = window.location.pathname.split('/').filter(p => p); if(parts[0] === 'profile' && parts[1]) return decodeURIComponent(parts[1]); return null; }
+    
     function attachMainEvents() {
-        document.getElementById('profileBtn')?.addEventListener('click', () => { if(currentUser) navigate(`/profile/${encodeURIComponent(currentUser.username)}`); else navigate('/register'); });
+        document.getElementById('profileBtn')?.addEventListener('click', () => { 
+            if(currentUser) navigate(`/profile/${encodeURIComponent(currentUser.username)}`); 
+            else navigate('/register'); 
+        });
         document.getElementById('createBtn')?.addEventListener('click', () => showCreatePage());
         document.getElementById('themeToggleBtn')?.addEventListener('click', () => { let isDark = document.body.classList.contains('dark'); setTheme(isDark ? 'light' : 'dark'); });
         let sb = document.getElementById('socialMenuBtn'), sm = document.getElementById('socialMenu');
         if(sb && sm) { sb.addEventListener('click', (e) => { e.stopPropagation(); sm.classList.toggle('show'); }); document.addEventListener('click', (e) => { if(!sm.contains(e.target) && e.target !== sb) sm.classList.remove('show'); }); }
     }
+    
     function manageAdminFab(isAdmin) { let old = document.querySelector('.admin-fab'); if(old) old.remove(); if(isAdmin) { let fab = document.createElement('div'); fab.className = 'admin-fab'; fab.innerHTML = '✏️'; fab.onclick = () => { let msg = prompt("Глобальное сообщение для всех:", globalMessage); if(msg !== null) { globalMessage = msg; saveGlobalMessage(); showGlobalMessage(); showToast("Глобал обновлён"); } }; document.body.appendChild(fab); } }
     function showGlobalMessage() { let el = document.getElementById('globalNotify'); if(globalMessage && globalMessage.trim()) { el.innerText = globalMessage; el.style.display = 'flex'; setTimeout(() => el.style.display = 'none', 5000); } else el.style.display = 'none'; }
     function setTheme(theme) { document.body.classList.remove('light', 'dark'); document.body.classList.add(theme); if(currentUser) { let u = users.find(u => u.id === currentUser.id); if(u) u.theme = theme; saveUsers(); } localStorage.setItem('rnxbin_global_theme', theme); }
     function setThemeFromUser() { let theme = 'light'; if(currentUser) { let u = users.find(u => u.id === currentUser.id); if(u && u.theme) theme = u.theme; } else theme = localStorage.getItem('rnxbin_global_theme') === 'dark' ? 'dark' : 'light'; document.body.classList.add(theme); }
     function initSession() { let sess = localStorage.getItem('rnxbin_session'); if(sess) { try { let obj = JSON.parse(sess); let found = users.find(u => u.id === obj.id && u.username === obj.username); if(found) currentUser = { id: found.id, username: found.username }; } catch(e) {} } }
+    
     window.addEventListener('popstate', () => renderRoute());
     loadStorage(); initSession(); setThemeFromUser(); renderRoute();
 </script>
